@@ -1,0 +1,87 @@
+package com.googlesource.gerrit.plugins.chatgpt.client;
+
+import com.google.common.net.HttpHeaders;
+import com.google.gson.Gson;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.googlesource.gerrit.plugins.chatgpt.Configuration;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.entity.ContentType;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.net.HttpURLConnection.HTTP_OK;
+
+@Slf4j
+@Singleton
+public class GerritClient {
+
+    private final Gson gson = new Gson();
+
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMinutes(5))
+            .build();
+
+    @Inject
+    private Configuration configuration;
+
+    public String getPatchSet(String changeId) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(getConfiguration().getGerritUserName(),
+                        getConfiguration().getGerritPassword()))
+                .uri(URI.create(getConfiguration().getGerritAuthBaseUrl()
+                        + UriResourceLocator.gerritPatchSetUri(changeId)))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != HTTP_OK) {
+            log.error("Failed to get patch. Response: {}", response);
+            throw new IOException("Failed to get patch from Gerrit");
+        }
+
+        String responseBody = response.body();
+        log.info("Successfully obtained patch. Decoding response body.");
+        return new String(Base64.getDecoder().decode(responseBody));
+    }
+
+    private String generateBasicAuth(String username, String password) {
+        String auth = username + ":" + password;
+        return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public void postComment(String changeId, String message) throws IOException, InterruptedException {
+        Map<String, String> map = new HashMap<>();
+        map.put("message", message);
+        String json = gson.toJson(map);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(getConfiguration().getGerritUserName(),
+                        getConfiguration().getGerritPassword()))
+                .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
+                .uri(URI.create(getConfiguration().getGerritAuthBaseUrl()
+                        + UriResourceLocator.gerritCommentUri(changeId)))
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != HTTP_OK) {
+            log.error("Review post failed with status code: {}", response.statusCode());
+        }
+    }
+
+    public Configuration getConfiguration() {
+        return this.configuration;
+    }
+
+}
