@@ -43,7 +43,7 @@ public class PatchSetCreated implements EventListener {
             } catch (IOException | InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Failed to submit review for project: {}, branch: {}, change key: {}", projectName, branchName, changeKey, e);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 log.error("Failed to submit review for project: {}, branch: {}, change key: {}", projectName, branchName, changeKey, e);
             }
         });
