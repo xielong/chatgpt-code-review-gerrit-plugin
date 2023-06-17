@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.chatgpt.Configuration;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.entity.ContentType;
 
 import java.io.BufferedReader;
@@ -34,7 +35,7 @@ public class OpenAiClient {
     private Configuration configuration;
 
     public String ask(String patchSet) throws IOException, InterruptedException {
-        HttpRequest request = createRequest(getConfiguration().getGptModel(),
+        HttpRequest request = createRequest(getConfiguration().getGptDomain(), getConfiguration().getGptModel(),
                 getConfiguration().getGptPrompt(), patchSet);
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -58,13 +59,14 @@ public class OpenAiClient {
         return finalContent.toString();
     }
 
-    private HttpRequest createRequest(String model, String prompt, String patchSet) {
+    private HttpRequest createRequest(String domain, String model, String prompt, String patchSet) {
         String jsonRequest = createJsonRequest(model, prompt, patchSet);
 
+        URI uri = StringUtils.isNotBlank(domain) ? URI.create(domain) : URI.create(Configuration.OPENAI_DOMAIN);
         return HttpRequest.newBuilder()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getConfiguration().getGptToken())
                 .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
-                .uri(URI.create(URI.create(Configuration.OPENAI_DOMAIN) + UriResourceLocator.chatCompletionsUri()))
+                .uri(URI.create(uri + UriResourceLocator.chatCompletionsUri()))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequest))
                 .build();
     }

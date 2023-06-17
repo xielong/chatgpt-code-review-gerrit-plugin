@@ -112,7 +112,7 @@ public class PatchSetReviewerTests {
         patchSetReviewer.review(CHANGE_ID);
 
         LoggedRequest firstMatchingRequest = findAll(postRequestedFor(urlEqualTo(UriResourceLocator
-                .gerritPatchSetUri(CHANGE_ID)))).get(0);
+                .gerritCommentUri(CHANGE_ID)))).get(0);
         String requestBody = firstMatchingRequest.getBodyAsString();
         assertEquals("{\"message\":\"Hello!\\n\"}", requestBody);
 
