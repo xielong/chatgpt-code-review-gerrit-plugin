@@ -1,0 +1,1 @@
+This plugin can send patches to GPT for code review.
