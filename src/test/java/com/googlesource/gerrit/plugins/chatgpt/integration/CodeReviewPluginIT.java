@@ -30,6 +30,7 @@ public class CodeReviewPluginIT {
 
     @Test
     public void sayHelloToGPT() throws IOException, InterruptedException {
+        when(configuration.getGptDomain()).thenReturn(Configuration.OPENAI_DOMAIN);
         when(configuration.getGptToken()).thenReturn("Your GPT token");
         when(configuration.getGptModel()).thenReturn(Configuration.DEFAULT_GPT_MODEL);
         when(configuration.getGptPrompt()).thenReturn(Configuration.DEFAULT_GPT_PROMPT);
