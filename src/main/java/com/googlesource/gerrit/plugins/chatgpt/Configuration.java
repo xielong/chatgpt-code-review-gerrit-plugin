@@ -23,11 +23,14 @@ public class Configuration {
     private final String gptModel;
     private final String gptPrompt;
     private final int gptMaxTokens;
+    private final double gptTemperature;
 
     private final String gerritAuthBaseUrl;
     private final String gerritUserName;
     private final String gerritPassword;
 
+    private final boolean globalEnable;
+    private final String enabledRepos;
     private final boolean patchSetReduction;
     private final int maxReviewLines;
 
@@ -39,9 +42,14 @@ public class Configuration {
         gptModel = cfg.getString("gptModel", DEFAULT_GPT_MODEL);
         gptPrompt = cfg.getString("gptPrompt", DEFAULT_GPT_PROMPT);
         gptMaxTokens = cfg.getInt("gptMaxTokens", 4096);
+
+        gptTemperature = Double.parseDouble(cfg.getString("gptTemperature", "1"));
         gerritAuthBaseUrl = getValidatedOrThrow("gerritAuthBaseUrl");
         gerritUserName = getValidatedOrThrow("gerritUserName");
         gerritPassword = getValidatedOrThrow("gerritPassword");
+
+        globalEnable = cfg.getBoolean("globalEnable", true);
+        enabledRepos = cfg.getString("enabledRepos", "");
         patchSetReduction = cfg.getBoolean("patchSetReduction", false);
         maxReviewLines = cfg.getInt("maxReviewLines", 1000);
     }

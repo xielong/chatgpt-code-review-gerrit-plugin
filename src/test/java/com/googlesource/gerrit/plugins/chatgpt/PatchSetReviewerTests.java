@@ -53,7 +53,9 @@ public class PatchSetReviewerTests {
         configuration = Mockito.mock(Configuration.class);
         when(configuration.getGerritAuthBaseUrl()).thenReturn("http://localhost:9527");
         when(configuration.getGptDomain()).thenReturn("http://localhost:9527");
+        when(configuration.getGptTemperature()).thenReturn(1.0);
         when(configuration.getMaxReviewLines()).thenReturn(500);
+        when(configuration.getEnabledRepos()).thenReturn("");
 
         gerritClient = Mockito.spy(new GerritClient() {
             @Override
@@ -70,7 +72,7 @@ public class PatchSetReviewerTests {
         });
 
         patchSetReviewer = new PatchSetReviewer(configuration, gerritClient, openAiClient);
-        patchSetCreated = new PatchSetCreated(patchSetReviewer);
+        patchSetCreated = new PatchSetCreated(configuration, patchSetReviewer);
     }
 
     private void setupMockRequests() {

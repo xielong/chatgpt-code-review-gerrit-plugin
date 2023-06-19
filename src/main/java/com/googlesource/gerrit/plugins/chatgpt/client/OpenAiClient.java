@@ -86,6 +86,7 @@ public class OpenAiClient {
         ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
                 .model(model)
                 .messages(messages)
+                .temperature(getConfiguration().getGptTemperature())
                 .stream(true)
                 .build();
 

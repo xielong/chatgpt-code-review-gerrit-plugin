@@ -42,6 +42,9 @@ as follows:
     gptModel = {gptModel}
     gptPrompt = {gptPrompt}
     gptMaxTokens = {gptMaxTokens}
+    gptTemperature = {gptTemperature}
+    globalEnable = {globalEnable}
+    enabledRepos = {enabledRepos}
     patchSetReduction = {patchSetReduction}
     maxReviewLines = {maxReviewLines}
 ```
@@ -55,11 +58,18 @@ as follows:
 
 ### Optional Parameters
 
-- `gptModel`: The default model is gpt-3.5-turbo. You can also configure it to gpt-4 or gpt-4-32k.
+- `gptModel`: The default model is gpt-3.5-turbo. You can also configure it to gpt-3.5-turbo-16k, gpt-4 or gpt-4-32k.
 - `gptPrompt`: The default prompt is "Act as a Code Review Helper, please review this patch set:". You can modify it to
   your preferred prompt.
 - `gptMaxTokens`: The default value is 4096 tokens. This determines the maximum dialogue length of ChatGPT. [Click
   here](https://platform.openai.com/tokenizer) to check the content token count.
+- `gptTemperature`: The default value is 1. What sampling temperature to use, between 0 and 2. Higher values like 0.8
+  will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+- `globalEnable`: The default value is true. If set to false, the plugin will only review the repositories specified in
+  the `enabledRepos`.
+- `enabledRepos` : The default value is empty. If `globalEnable` is set to false, the plugin will operate exclusively on
+  the repositories specified here. The value should be a comma-separated list of repository names, for example: "
+  repo1,repo2,repo3".
 - `patchSetReduction`: The default value is false. If set to true, the plugin will attempt to reduce patch content by
   compressing redundant blank lines, tabs, import statements, etc., in order to decrease the token count.
 - `maxReviewLines`: The default value is 1000. This sets a limit on the number of lines of code included in the review.
