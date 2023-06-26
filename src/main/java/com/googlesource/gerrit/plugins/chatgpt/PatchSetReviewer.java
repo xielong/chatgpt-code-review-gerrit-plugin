@@ -1,13 +1,11 @@
 package com.googlesource.gerrit.plugins.chatgpt;
 
-import com.google.gerrit.server.project.NoSuchProjectException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.chatgpt.client.GerritClient;
 import com.googlesource.gerrit.plugins.chatgpt.client.OpenAiClient;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +23,7 @@ public class PatchSetReviewer {
         this.openAiClient = openAiClient;
     }
 
-    public void review(Configuration config, String fullChangeId) throws IOException, InterruptedException, NoSuchProjectException {
+    public void review(Configuration config, String fullChangeId) throws Exception {
         String patchSet = gerritClient.getPatchSet(config, fullChangeId);
         if (config.isPatchSetReduction()) {
             patchSet = reducePatchSet(patchSet);
@@ -72,8 +70,7 @@ public class PatchSetReviewer {
                 .collect(Collectors.joining("\n"));
     }
 
-    private String getReviewSuggestion(Configuration config, String changeId, String patchSet)
-            throws IOException, InterruptedException {
+    private String getReviewSuggestion(Configuration config, String changeId, String patchSet) throws Exception {
         List<String> patchLines = Arrays.asList(patchSet.split("\n"));
         if (patchLines.size() > config.getMaxReviewLines()) {
             log.warn("Patch set too large. Skipping review. changeId: {}", changeId);

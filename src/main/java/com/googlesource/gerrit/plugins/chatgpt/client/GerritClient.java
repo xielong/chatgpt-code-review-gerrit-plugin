@@ -9,11 +9,9 @@ import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,14 +21,10 @@ import static java.net.HttpURLConnection.HTTP_OK;
 @Slf4j
 @Singleton
 public class GerritClient {
-
     private final Gson gson = new Gson();
+    private final HttpClientWithRetry httpClientWithRetry = new HttpClientWithRetry();
 
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofMinutes(5))
-            .build();
-
-    public String getPatchSet(Configuration config, String fullChangeId) throws IOException, InterruptedException {
+    public String getPatchSet(Configuration config, String fullChangeId) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(config.getGerritUserName(),
                         config.getGerritPassword()))
@@ -38,7 +32,8 @@ public class GerritClient {
                         + UriResourceLocator.gerritPatchSetUri(fullChangeId)))
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        //HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClientWithRetry.execute(request);
 
         if (response.statusCode() != HTTP_OK) {
             log.error("Failed to get patch. Response: {}", response);
@@ -55,7 +50,7 @@ public class GerritClient {
         return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
     }
 
-    public void postComment(Configuration config, String fullChangeId, String message) throws IOException, InterruptedException {
+    public void postComment(Configuration config, String fullChangeId, String message) throws Exception {
         Map<String, String> map = new HashMap<>();
         map.put("message", message);
         String json = gson.toJson(map);
@@ -69,7 +64,8 @@ public class GerritClient {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        //HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClientWithRetry.execute(request);
 
         if (response.statusCode() != HTTP_OK) {
             log.error("Review post failed with status code: {}", response.statusCode());

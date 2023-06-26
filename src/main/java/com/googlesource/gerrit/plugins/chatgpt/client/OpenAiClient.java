@@ -11,31 +11,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-
-import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 @Singleton
 public class OpenAiClient {
     private final Gson gson = new Gson();
+    private final HttpClientWithRetry httpClientWithRetry = new HttpClientWithRetry();
 
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofMinutes(5))
-            .build();
-
-    public String ask(Configuration config, String patchSet) throws IOException, InterruptedException {
+    public String ask(Configuration config, String patchSet) throws Exception {
         HttpRequest request = createRequest(config, patchSet);
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != HTTP_OK) {
-            throw new IOException("Unexpected response " + response);
-        }
+        HttpResponse<String> response = httpClientWithRetry.execute(request);
+
         String body = response.body();
         if (body == null) {
             throw new IOException("responseBody is null");
@@ -53,13 +44,13 @@ public class OpenAiClient {
     }
 
     private HttpRequest createRequest(Configuration config, String patchSet) {
-        String jsonRequest = createRequestBody(config, patchSet);
+        String requestBody = createRequestBody(config, patchSet);
 
         return HttpRequest.newBuilder()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + config.getGptToken())
                 .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
                 .uri(URI.create(URI.create(config.getGptDomain()) + UriResourceLocator.chatCompletionsUri()))
-                .POST(HttpRequest.BodyPublishers.ofString(jsonRequest))
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
     }
 

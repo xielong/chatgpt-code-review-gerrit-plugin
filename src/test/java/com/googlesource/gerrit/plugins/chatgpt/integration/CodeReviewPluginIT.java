@@ -11,8 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
-
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.Mockito.when;
 
@@ -31,7 +29,7 @@ public class CodeReviewPluginIT {
     private OpenAiClient openAiClient;
 
     @Test
-    public void sayHelloToGPT() throws IOException, InterruptedException {
+    public void sayHelloToGPT() throws Exception {
         when(config.getGptDomain()).thenReturn(Configuration.OPENAI_DOMAIN);
         when(config.getGptToken()).thenReturn("Your GPT token");
         when(config.getGptModel()).thenReturn(Configuration.DEFAULT_GPT_MODEL);
@@ -43,7 +41,7 @@ public class CodeReviewPluginIT {
     }
 
     @Test
-    public void getPatchSet() throws IOException, InterruptedException {
+    public void getPatchSet() throws Exception {
         when(config.getGerritAuthBaseUrl()).thenReturn("Your Gerrit URL");
         when(config.getGerritUserName()).thenReturn("Your Gerrit username");
         when(config.getGerritPassword()).thenReturn("Your Gerrit password");
@@ -54,7 +52,7 @@ public class CodeReviewPluginIT {
     }
 
     @Test
-    public void postComment() throws IOException, InterruptedException {
+    public void postComment() throws Exception {
         when(config.getGerritAuthBaseUrl()).thenReturn("Your Gerrit URL");
         when(config.getGerritUserName()).thenReturn("Your Gerrit username");
         when(config.getGerritPassword()).thenReturn("Your Gerrit password");
