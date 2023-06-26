@@ -1,6 +1,7 @@
 package com.googlesource.gerrit.plugins.chatgpt;
 
 import com.google.common.base.Splitter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gerrit.entities.Project;
 import com.google.gerrit.server.events.Event;
 import com.google.gerrit.server.events.EventListener;
@@ -9,22 +10,46 @@ import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 
 @Slf4j
 public class PatchSetCreated implements EventListener {
     private final ConfigCreator configCreator;
     private final PatchSetReviewer reviewer;
+    private final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(100);
+    private final RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
+    private final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setNameFormat("PatchSetReviewExecutorThread-%d")
+            .build();
+    private final ExecutorService executorService = new ThreadPoolExecutor(
+            1, 1, 0L, TimeUnit.MILLISECONDS, queue, threadFactory, handler);
     private CompletableFuture<Void> latestFuture;
 
     @Inject
     PatchSetCreated(ConfigCreator configCreator, PatchSetReviewer reviewer) {
         this.configCreator = configCreator;
         this.reviewer = reviewer;
+
+        addShutdownHoot();
+
     }
 
     public static String buildFullChangeId(String projectName, String branchName, String changeKey) {
         return String.join("~", projectName, branchName, changeKey);
+    }
+
+    private void addShutdownHoot() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException ex) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }));
     }
 
     @Override
@@ -66,7 +91,7 @@ public class PatchSetCreated implements EventListener {
                     Thread.currentThread().interrupt();
                 }
             }
-        });
+        }, executorService);
     }
 
     public CompletableFuture<Void> getLatestFuture() {
