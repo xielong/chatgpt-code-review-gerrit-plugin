@@ -1,5 +1,6 @@
 package com.googlesource.gerrit.plugins.chatgpt;
 
+import com.google.gerrit.server.project.NoSuchProjectException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.chatgpt.client.GerritClient;
@@ -13,41 +14,30 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 public class PatchSetReviewer {
-
     private static final String SPLIT_REVIEW_MSG = "Too many changes. Please consider splitting into patches smaller than %s lines for review.";
-
     private static final int COMMENT_BATCH_SIZE = 25;
-
-    private final Configuration configuration;
     private final GerritClient gerritClient;
     private final OpenAiClient openAiClient;
 
     @Inject
-    public PatchSetReviewer(Configuration configuration, GerritClient gerritClient, OpenAiClient openAiClient) {
-        this.configuration = configuration;
+    PatchSetReviewer(GerritClient gerritClient, OpenAiClient openAiClient) {
         this.gerritClient = gerritClient;
         this.openAiClient = openAiClient;
     }
 
-    public void review(String changeId) throws IOException, InterruptedException {
-        log.info("Starting to review patch set: changeId={}", changeId);
-
-        String patchSet = gerritClient.getPatchSet(changeId);
-        if (configuration.isPatchSetReduction()) {
+    public void review(Configuration config, String fullChangeId) throws IOException, InterruptedException, NoSuchProjectException {
+        String patchSet = gerritClient.getPatchSet(config, fullChangeId);
+        if (config.isPatchSetReduction()) {
             patchSet = reducePatchSet(patchSet);
             log.debug("Reduced patch set: {}", patchSet);
         }
 
-        String reviewSuggestion = getReviewSuggestion(changeId, patchSet);
+        String reviewSuggestion = getReviewSuggestion(config, fullChangeId, patchSet);
         List<String> reviewBatches = splitReviewIntoBatches(reviewSuggestion);
 
         for (String reviewBatch : reviewBatches) {
-            gerritClient.postComment(changeId, reviewBatch);
-            log.debug("Posted review batch: {}", reviewBatch);
+            gerritClient.postComment(config, fullChangeId, reviewBatch);
         }
-
-        log.info("Finished reviewing patch set: changeId={}", changeId);
-
     }
 
     private List<String> splitReviewIntoBatches(String review) {
@@ -82,19 +72,14 @@ public class PatchSetReviewer {
                 .collect(Collectors.joining("\n"));
     }
 
-    private String getReviewSuggestion(String changeId, String patchSet) throws IOException, InterruptedException {
-        log.info("Starting review for changeId: {}", changeId);
-
+    private String getReviewSuggestion(Configuration config, String changeId, String patchSet)
+            throws IOException, InterruptedException {
         List<String> patchLines = Arrays.asList(patchSet.split("\n"));
-        if (patchLines.size() > configuration.getMaxReviewLines()) {
+        if (patchLines.size() > config.getMaxReviewLines()) {
             log.warn("Patch set too large. Skipping review. changeId: {}", changeId);
-            return String.format(SPLIT_REVIEW_MSG, configuration.getMaxReviewLines());
+            return String.format(SPLIT_REVIEW_MSG, config.getMaxReviewLines());
         }
-
-        String reviewSuggestion = openAiClient.ask(patchSet);
-        log.info("Review completed for changeId: {}", changeId);
-        return reviewSuggestion;
-
+        return openAiClient.ask(config, patchSet);
     }
 }
 

@@ -18,31 +18,46 @@
 3. **确认：** 安装好插件后，你可以在 Gerrit 的日志中看到以下信息：
 
    ```bash
-      INFO com.google.gerrit.server.plugins.PluginLoader : Loaded plugin chatgpt-code-review-gerrit-plugin, version 3.3.0
+      INFO com.google.gerrit.server.plugins.PluginLoader : Loaded plugin chatgpt-code-review-gerrit-plugin, version 1.0.0
     ```
    并可以在 Gerrit 的插件页面中看到 chatgpt-code-review-gerrit-plugin 插件的状态为 Enabled。
 
 ## 配置参数
 
-要配置这些参数，你需要修改你的 Gerrit 配置文件（`gerrit.config`）。文件格式如下：
+你可以选择设定全局参数，或对特定项目进行独立配置。若进行独立配置，则相应的项目配置将覆盖全局参数。
+
+### 全局配置
+
+编辑 $gerrit_site/etc/`gerrit.config` 文件，添加以下内容：
 
 ```
 [plugin "chatgpt-code-review-gerrit-plugin"]
     # 必填参数
     gptToken = {gptToken}
     gerritAuthBaseUrl = {gerritAuthBaseUrl}
-    gerritUserName = {gerritUserName}
-    gerritPassword = {gerritPassword}
-   
+    ...
+
     # 可选参数
     gptModel = {gptModel}
     gptPrompt = {gptPrompt}
-    gptMaxTokens = {gptMaxTokens}
-    gptTemperature = {gptTemperature}
-    globalEnable = {globalEnable}
-    enabledRepos = {enabledRepos}
-    patchSetReduction = {patchSetReduction}
-    maxReviewLines = {maxReviewLines}
+    ...
+```
+
+### 项目配置
+
+编辑 refs/meta/config 的 project.config 文件，添加以下内容：
+
+```
+[plugin "chatgpt-code-review-gerrit-plugin"]
+    # 必填参数
+    gptToken = {gptToken}
+    gerritAuthBaseUrl = {gerritAuthBaseUrl}
+    ...
+
+    # 可选参数
+    gptModel = {gptModel}
+    gptPrompt = {gptPrompt}
+    ...
 ```
 
 ### 必填参数
@@ -51,21 +66,20 @@
 - `gerritAuthBaseUrl`：Gerrit 实例的 URL。类似于：https://gerrit.local.team/a
 - `gerritUserName`：Gerrit 用户名。
 - `gerritPassword`：Gerrit 密码。
+- `globalEnable`: 默认值为 false。插件将只会审查指定的仓库，如果设为 true，插件默认会审查所有 review 请求。
 
 ### 可选参数
 
 - `gptModel`：默认模型是 gpt-3.5-turbo。你也可以配置成 gpt-3.5-turbo-16k、gpt-4 或 gpt-4-32k。
 - `gptPrompt`：默认提示是 "Act as a Code Review Helper, please review this patch set:"。你可以修改成自己喜欢的 prompt。
-- `gptMaxTokens`：默认值是 4096 tokens。这决定了 ChatGPT 最大对话长度。[点击这里](https://platform.openai.com/tokenizer)
-  检查内容 token 数量。
-- `gptTemperature`: 默认值为 1。范围在0到2之间。较高的值如 0.8 会使输出结果更具随机性，而较低的值如 0.2 则会让输出更加集中和确定性强。
-- `globalEnable`: 默认值为true。如果设为false，插件将只会审查在enabledRepos参数中指定的仓库。
-- `enabledRepos`:
-  默认值为空字符串。如果globalEnable被设为false，插件将仅在这里指定的仓库中运行。值应为仓库名称的逗号分隔列表，例如："
-  repo1,repo2,repo3"。
-- `patchSetReduction`：默认值是 false。如果设置为 true，插件会尝试压缩patch内容，包括但不限于多余的空行、制表符、import语句等，以便减少
-  token 数量等。
+- `gptTemperature`: 默认值为 1。范围在 0 到 2 之间。较高的值如 1.8 会使输出结果更具随机性，而较低的值如 0.2 则会让输出更加集中和确定性强。
+- `patchSetReduction`：默认值是 false。如果设置为 true，插件会尝试压缩 patch 内容，包括但不限于多余的空行、制表符、import
+  语句等，以便减少 token 数量等。
 - `maxReviewLines`：默认值是 1000。这设置了审查中包含的代码行数限制。
+- `enabledProjects（仅用于全局配置）`:
+  默认值为空字符串。如果 globalEnable 被设为 false，插件将仅在这里指定的仓库中运行。值应为仓库名称的逗号分隔列表，例如："
+  project1,project2,project3"。
+- `isEnabled（仅用于项目配置）`: 默认值为 false。如果设为 true，插件将会 review 这个项目的 patchSet。
 
 ## 测试
 

@@ -2,7 +2,6 @@ package com.googlesource.gerrit.plugins.chatgpt.client;
 
 import com.google.common.net.HttpHeaders;
 import com.google.gson.Gson;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.chatgpt.Configuration;
 import lombok.extern.slf4j.Slf4j;
@@ -30,11 +29,8 @@ public class OpenAiClient {
             .connectTimeout(Duration.ofMinutes(5))
             .build();
 
-    @Inject
-    private Configuration configuration;
-
-    public String ask(String patchSet) throws IOException, InterruptedException {
-        HttpRequest request = createRequest(patchSet);
+    public String ask(Configuration config, String patchSet) throws IOException, InterruptedException {
+        HttpRequest request = createRequest(config, patchSet);
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != HTTP_OK) {
@@ -56,25 +52,21 @@ public class OpenAiClient {
         return finalContent.toString();
     }
 
-    private HttpRequest createRequest(String patchSet) {
-        String domain = getConfiguration().getGptDomain();
-        String model = getConfiguration().getGptModel();
-        String prompt = getConfiguration().getGptPrompt();
-
-        String jsonRequest = createJsonRequest(model, prompt, patchSet);
+    private HttpRequest createRequest(Configuration config, String patchSet) {
+        String jsonRequest = createRequestBody(config, patchSet);
 
         return HttpRequest.newBuilder()
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + getConfiguration().getGptToken())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + config.getGptToken())
                 .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
-                .uri(URI.create(URI.create(domain) + UriResourceLocator.chatCompletionsUri()))
+                .uri(URI.create(URI.create(config.getGptDomain()) + UriResourceLocator.chatCompletionsUri()))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequest))
                 .build();
     }
 
-    private String createJsonRequest(String model, String prompt, String patchSet) {
+    private String createRequestBody(Configuration config, String patchSet) {
         ChatCompletionRequest.Message systemMessage = ChatCompletionRequest.Message.builder()
                 .role("system")
-                .content(prompt)
+                .content(config.getGptPrompt())
                 .build();
         ChatCompletionRequest.Message userMessage = ChatCompletionRequest.Message.builder()
                 .role("user")
@@ -84,9 +76,9 @@ public class OpenAiClient {
         List<ChatCompletionRequest.Message> messages = List.of(systemMessage, userMessage);
 
         ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                .model(model)
+                .model(config.getGptModel())
                 .messages(messages)
-                .temperature(getConfiguration().getGptTemperature())
+                .temperature(config.getGptTemperature())
                 .stream(true)
                 .build();
 
@@ -103,10 +95,6 @@ public class OpenAiClient {
                 gson.fromJson(line.substring("data: ".length()), ChatCompletionResponse.class);
         String content = chatCompletionResponse.getChoices().get(0).getDelta().getContent();
         return Optional.ofNullable(content);
-    }
-
-    public Configuration getConfiguration() {
-        return this.configuration;
     }
 
 }

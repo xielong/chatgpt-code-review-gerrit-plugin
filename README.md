@@ -19,34 +19,49 @@ provide review feedback in the form of comments.
 3. **Verify:** After installing the plugin, you can see the following information in Gerrit's logs:
 
    ```bash
-   INFO com.google.gerrit.server.plugins.PluginLoader : Loaded plugin chatgpt-code-review-gerrit-plugin, version 3.3.0
+   INFO com.google.gerrit.server.plugins.PluginLoader : Loaded plugin chatgpt-code-review-gerrit-plugin, version 1.0.0
    ```
 
    You can also check the status of the chatgpt-code-review-gerrit-plugin on Gerrit's plugin page as Enabled.
 
 ## Configuration Parameters
 
+You have the option to establish global settings, or independently configure specific projects. If you choose
+independent configuration, the corresponding project settings will override the global parameters.
+
+### Global Configuration
+
 To configure these parameters, you need to modify your Gerrit configuration file (`gerrit.config`). The file format is
 as follows:
 
 ```
 [plugin "chatgpt-code-review-gerrit-plugin"]
-
     # Required parameters
     gptToken = {gptToken}
     gerritAuthBaseUrl = {gerritAuthBaseUrl}
-    gerritUserName = {gerritUserName}
-    gerritPassword = {gerritPassword}
+    ...
 
     # Optional parameters
     gptModel = {gptModel}
     gptPrompt = {gptPrompt}
-    gptMaxTokens = {gptMaxTokens}
-    gptTemperature = {gptTemperature}
-    globalEnable = {globalEnable}
-    enabledRepos = {enabledRepos}
-    patchSetReduction = {patchSetReduction}
-    maxReviewLines = {maxReviewLines}
+    ...
+```
+
+### Project Configuration
+
+To add the following content, please edit the project.config file in refs/meta/config:
+
+```
+[plugin "chatgpt-code-review-gerrit-plugin"]
+    # Required parameters
+    gptToken = {gptToken}
+    gerritAuthBaseUrl = {gerritAuthBaseUrl}
+    ...
+
+    # Optional parameters
+    gptModel = {gptModel}
+    gptPrompt = {gptPrompt}
+    ...
 ```
 
 ### Required Parameters
@@ -55,24 +70,25 @@ as follows:
 - `gerritAuthBaseUrl`: The URL of your Gerrit instance. Similar to: https://gerrit.local.team/a
 - `gerritUserName`: Gerrit username.
 - `gerritPassword`: Gerrit password.
+- `globalEnable`: Default value is false. The plugin will only review specified repositories. If set to true, the plugin
+  will by default review all pull requests.
 
 ### Optional Parameters
 
 - `gptModel`: The default model is gpt-3.5-turbo. You can also configure it to gpt-3.5-turbo-16k, gpt-4 or gpt-4-32k.
 - `gptPrompt`: The default prompt is "Act as a Code Review Helper, please review this patch set:". You can modify it to
   your preferred prompt.
-- `gptMaxTokens`: The default value is 4096 tokens. This determines the maximum dialogue length of ChatGPT. [Click
-  here](https://platform.openai.com/tokenizer) to check the content token count.
 - `gptTemperature`: The default value is 1. What sampling temperature to use, between 0 and 2. Higher values like 0.8
   will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
-- `globalEnable`: The default value is true. If set to false, the plugin will only review the repositories specified in
-  the `enabledRepos`.
-- `enabledRepos` : The default value is empty. If `globalEnable` is set to false, the plugin will operate exclusively on
-  the repositories specified here. The value should be a comma-separated list of repository names, for example: "
-  repo1,repo2,repo3".
 - `patchSetReduction`: The default value is false. If set to true, the plugin will attempt to reduce patch content by
   compressing redundant blank lines, tabs, import statements, etc., in order to decrease the token count.
 - `maxReviewLines`: The default value is 1000. This sets a limit on the number of lines of code included in the review.
+- `enabledProjects (for global configuration only)`:
+  The default value is an empty string. If globalEnable is set to false, the plugin will only run in the repositories
+  specified here. The value should be a comma-separated list of repository names, for example: "
+  project1,project2,project3".
+- `isEnabled (for project configuration only)`: The default is false. If set to true, the plugin will review the
+  patchSet of this project.
 
 ## Testing
 

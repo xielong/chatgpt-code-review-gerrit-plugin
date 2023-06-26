@@ -2,7 +2,6 @@ package com.googlesource.gerrit.plugins.chatgpt.client;
 
 import com.google.common.net.HttpHeaders;
 import com.google.gson.Gson;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.googlesource.gerrit.plugins.chatgpt.Configuration;
 import lombok.extern.slf4j.Slf4j;
@@ -31,15 +30,12 @@ public class GerritClient {
             .connectTimeout(Duration.ofMinutes(5))
             .build();
 
-    @Inject
-    private Configuration configuration;
-
-    public String getPatchSet(String changeId) throws IOException, InterruptedException {
+    public String getPatchSet(Configuration config, String fullChangeId) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(getConfiguration().getGerritUserName(),
-                        getConfiguration().getGerritPassword()))
-                .uri(URI.create(getConfiguration().getGerritAuthBaseUrl()
-                        + UriResourceLocator.gerritPatchSetUri(changeId)))
+                .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(config.getGerritUserName(),
+                        config.getGerritPassword()))
+                .uri(URI.create(config.getGerritAuthBaseUrl()
+                        + UriResourceLocator.gerritPatchSetUri(fullChangeId)))
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -59,17 +55,17 @@ public class GerritClient {
         return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
     }
 
-    public void postComment(String changeId, String message) throws IOException, InterruptedException {
+    public void postComment(Configuration config, String fullChangeId, String message) throws IOException, InterruptedException {
         Map<String, String> map = new HashMap<>();
         map.put("message", message);
         String json = gson.toJson(map);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(getConfiguration().getGerritUserName(),
-                        getConfiguration().getGerritPassword()))
+                .header(HttpHeaders.AUTHORIZATION, generateBasicAuth(config.getGerritUserName(),
+                        config.getGerritPassword()))
                 .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
-                .uri(URI.create(getConfiguration().getGerritAuthBaseUrl()
-                        + UriResourceLocator.gerritCommentUri(changeId)))
+                .uri(URI.create(config.getGerritAuthBaseUrl()
+                        + UriResourceLocator.gerritCommentUri(fullChangeId)))
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
@@ -78,10 +74,6 @@ public class GerritClient {
         if (response.statusCode() != HTTP_OK) {
             log.error("Review post failed with status code: {}", response.statusCode());
         }
-    }
-
-    public Configuration getConfiguration() {
-        return this.configuration;
     }
 
 }

@@ -4,6 +4,7 @@ import com.googlesource.gerrit.plugins.chatgpt.Configuration;
 import com.googlesource.gerrit.plugins.chatgpt.client.GerritClient;
 import com.googlesource.gerrit.plugins.chatgpt.client.OpenAiClient;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -12,15 +13,16 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertNotNull;
+import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.Mockito.when;
 
-//@Ignore("This test suite is designed for integration testing and is not intended to be executed during the regular build process")
+@Ignore("This test suite is designed to demonstrate how to test the Gerrit and GPT interfaces in a real environment. " +
+        "It is not intended to be executed during the regular build process")
 @Slf4j
 @RunWith(MockitoJUnitRunner.class)
 public class CodeReviewPluginIT {
     @Mock
-    private Configuration configuration;
+    private Configuration config;
 
     @InjectMocks
     private GerritClient gerritClient;
@@ -30,33 +32,33 @@ public class CodeReviewPluginIT {
 
     @Test
     public void sayHelloToGPT() throws IOException, InterruptedException {
-        when(configuration.getGptDomain()).thenReturn(Configuration.OPENAI_DOMAIN);
-        when(configuration.getGptToken()).thenReturn("Your GPT token");
-        when(configuration.getGptModel()).thenReturn(Configuration.DEFAULT_GPT_MODEL);
-        when(configuration.getGptPrompt()).thenReturn(Configuration.DEFAULT_GPT_PROMPT);
+        when(config.getGptDomain()).thenReturn(Configuration.OPENAI_DOMAIN);
+        when(config.getGptToken()).thenReturn("Your GPT token");
+        when(config.getGptModel()).thenReturn(Configuration.DEFAULT_GPT_MODEL);
+        when(config.getGptPrompt()).thenReturn(Configuration.DEFAULT_GPT_PROMPT);
 
-        String answer = openAiClient.ask("hello");
+        String answer = openAiClient.ask(config, "hello");
         log.info("answer: {}", answer);
         assertNotNull(answer);
     }
 
     @Test
     public void getPatchSet() throws IOException, InterruptedException {
-        when(configuration.getGerritAuthBaseUrl()).thenReturn("Your Gerrit URL");
-        when(configuration.getGerritUserName()).thenReturn("Your Gerrit username");
-        when(configuration.getGerritPassword()).thenReturn("Your Gerrit password");
+        when(config.getGerritAuthBaseUrl()).thenReturn("Your Gerrit URL");
+        when(config.getGerritUserName()).thenReturn("Your Gerrit username");
+        when(config.getGerritPassword()).thenReturn("Your Gerrit password");
 
-        String patchSet = gerritClient.getPatchSet("${changeId}");
+        String patchSet = gerritClient.getPatchSet(config, "${changeId}");
         log.info("patchSet: {}", patchSet);
         assertNotNull(patchSet);
     }
 
     @Test
     public void postComment() throws IOException, InterruptedException {
-        when(configuration.getGerritAuthBaseUrl()).thenReturn("Your Gerrit URL");
-        when(configuration.getGerritUserName()).thenReturn("Your Gerrit username");
-        when(configuration.getGerritPassword()).thenReturn("Your Gerrit password");
+        when(config.getGerritAuthBaseUrl()).thenReturn("Your Gerrit URL");
+        when(config.getGerritUserName()).thenReturn("Your Gerrit username");
+        when(config.getGerritPassword()).thenReturn("Your Gerrit password");
 
-        gerritClient.postComment("Your changeId", "message");
+        gerritClient.postComment(config, "Your changeId", "message");
     }
 }

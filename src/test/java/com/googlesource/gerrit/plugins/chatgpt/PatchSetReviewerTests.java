@@ -1,8 +1,14 @@
 package com.googlesource.gerrit.plugins.chatgpt;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.google.common.net.HttpHeaders;
+import com.google.gerrit.entities.BranchNameKey;
+import com.google.gerrit.entities.Change;
+import com.google.gerrit.entities.Project;
+import com.google.gerrit.server.events.PatchSetCreatedEvent;
+import com.google.gerrit.server.project.NoSuchProjectException;
 import com.googlesource.gerrit.plugins.chatgpt.client.GerritClient;
 import com.googlesource.gerrit.plugins.chatgpt.client.OpenAiClient;
 import com.googlesource.gerrit.plugins.chatgpt.client.UriResourceLocator;
@@ -12,73 +18,57 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.googlesource.gerrit.plugins.chatgpt.PatchSetCreated.buildFullChangeId;
+import static com.googlesource.gerrit.plugins.chatgpt.client.UriResourceLocator.gerritCommentUri;
+import static com.googlesource.gerrit.plugins.chatgpt.client.UriResourceLocator.gerritPatchSetUri;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Slf4j
 @RunWith(MockitoJUnitRunner.class)
 public class PatchSetReviewerTests {
-
+    private static final String PROJECT_NAME = "myProject";
     private static final String CHANGE_ID = "myChangeId";
+    private static final String BRANCH_NAME = "myBranchName";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(9527);
 
-    private Configuration configuration;
-
-    private GerritClient gerritClient;
-
-    private OpenAiClient openAiClient;
-
-    private PatchSetReviewer patchSetReviewer;
-
-    private PatchSetCreated patchSetCreated;
+    private Configuration config;
 
     @Before
     public void before() {
-        initializePatchSetReviewer();
+        initConfig();
         setupMockRequests();
     }
 
-    private void initializePatchSetReviewer() {
-        configuration = Mockito.mock(Configuration.class);
-        when(configuration.getGerritAuthBaseUrl()).thenReturn("http://localhost:9527");
-        when(configuration.getGptDomain()).thenReturn("http://localhost:9527");
-        when(configuration.getGptTemperature()).thenReturn(1.0);
-        when(configuration.getMaxReviewLines()).thenReturn(500);
-        when(configuration.getEnabledRepos()).thenReturn("");
+    private void initConfig() {
+        config = Mockito.mock(Configuration.class);
+        when(config.getGerritAuthBaseUrl()).thenReturn("http://localhost:9527");
+        when(config.getGptDomain()).thenReturn("http://localhost:9527");
+        when(config.getGptTemperature()).thenReturn(1.0);
+        when(config.getMaxReviewLines()).thenReturn(500);
+        when(config.getEnabledProjects()).thenReturn("");
+        when(config.isProjectEnable()).thenReturn(true);
 
-        gerritClient = Mockito.spy(new GerritClient() {
-            @Override
-            public Configuration getConfiguration() {
-                return configuration;
-            }
-        });
-
-        openAiClient = Mockito.spy(new OpenAiClient() {
-            @Override
-            public Configuration getConfiguration() {
-                return configuration;
-            }
-        });
-
-        patchSetReviewer = new PatchSetReviewer(configuration, gerritClient, openAiClient);
-        patchSetCreated = new PatchSetCreated(configuration, patchSetReviewer);
     }
 
     private void setupMockRequests() {
         // Mocks the behavior of the getPatchSet request
-        stubFor(get(urlEqualTo(URI.create(configuration.getGerritAuthBaseUrl() +
-                UriResourceLocator.gerritPatchSetUri(CHANGE_ID)).getPath()))
+        stubFor(get(gerritPatchSetUri(buildFullChangeId(PROJECT_NAME, BRANCH_NAME, CHANGE_ID)))
                 .willReturn(aResponse()
                         .withStatus(HTTP_OK)
                         .withHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
@@ -95,7 +85,7 @@ public class PatchSetReviewerTests {
                 "2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIiwiY3JlYXRlZCI6MTY4NjgxOTQ1NywibW9kZWwiOiJncHQtMy41LXR1cm" +
                 "JvLTAzMDEiLCJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiISJ9LCJpbmRleCI6MCwiZmluaXNoX3JlYXNvbiI" +
                 "6bnVsbH1dfQ==");
-        stubFor(post(urlEqualTo(URI.create(configuration.getGptDomain()
+        stubFor(post(urlEqualTo(URI.create(config.getGptDomain()
                 + UriResourceLocator.chatCompletionsUri()).getPath()))
                 .willReturn(aResponse()
                         .withStatus(HTTP_OK)
@@ -103,19 +93,34 @@ public class PatchSetReviewerTests {
                         .withBody(new String(gptAnswer))));
 
         // Mocks the behavior of the postReview request
-        stubFor(post(urlEqualTo(URI.create(configuration.getGerritAuthBaseUrl()
-                + UriResourceLocator.gerritCommentUri(CHANGE_ID)).getPath()))
+        stubFor(post(gerritCommentUri(buildFullChangeId(PROJECT_NAME, BRANCH_NAME, CHANGE_ID)))
                 .willReturn(aResponse()
                         .withStatus(HTTP_OK)));
     }
 
     @Test
-    public void review() throws IOException, InterruptedException {
-        patchSetReviewer.review(CHANGE_ID);
+    public void review() throws InterruptedException, NoSuchProjectException, ExecutionException {
+        GerritClient gerritClient = new GerritClient();
+        OpenAiClient openAiClient = new OpenAiClient();
+        PatchSetReviewer patchSetReviewer = new PatchSetReviewer(gerritClient, openAiClient);
+        ConfigCreator mockConfigCreator = mock(ConfigCreator.class);
+        when(mockConfigCreator.createConfig(ArgumentMatchers.any())).thenReturn(config);
 
-        LoggedRequest firstMatchingRequest = findAll(postRequestedFor(urlEqualTo(UriResourceLocator
-                .gerritCommentUri(CHANGE_ID)))).get(0);
-        String requestBody = firstMatchingRequest.getBodyAsString();
+        PatchSetCreatedEvent event = mock(PatchSetCreatedEvent.class);
+        when(event.getProjectNameKey()).thenReturn(Project.NameKey.parse(PROJECT_NAME));
+        when(event.getBranchNameKey()).thenReturn(BranchNameKey.create(Project.NameKey.parse(PROJECT_NAME), BRANCH_NAME));
+        when(event.getChangeKey()).thenReturn(Change.Key.parse(CHANGE_ID));
+
+        PatchSetCreated patchSetCreated = new PatchSetCreated(mockConfigCreator, patchSetReviewer);
+        patchSetCreated.onEvent(event);
+        CompletableFuture<Void> future = patchSetCreated.getLatestFuture();
+        future.get();
+
+        RequestPatternBuilder requestPatternBuilder = postRequestedFor(
+                urlEqualTo(gerritCommentUri(buildFullChangeId(PROJECT_NAME, BRANCH_NAME, CHANGE_ID))));
+        List<LoggedRequest> loggedRequests = findAll(requestPatternBuilder);
+        assertEquals(1, loggedRequests.size());
+        String requestBody = loggedRequests.get(0).getBodyAsString();
         assertEquals("{\"message\":\"Hello!\\n\"}", requestBody);
 
     }

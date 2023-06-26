@@ -6,12 +6,12 @@ public class UriResourceLocator {
         throw new IllegalStateException("Utility class");
     }
 
-    public static String gerritPatchSetUri(String changeId) {
-        return "/changes/" + changeId + "/revisions/current/patch";
+    public static String gerritPatchSetUri(String fullChangeId) {
+        return "/changes/" + fullChangeId + "/revisions/current/patch";
     }
 
-    public static String gerritCommentUri(String changeId) {
-        return "/changes/" + changeId + "/revisions/current/review";
+    public static String gerritCommentUri(String fullChangeId) {
+        return "/changes/" + fullChangeId + "/revisions/current/review";
     }
 
     public static String chatCompletionsUri() {
