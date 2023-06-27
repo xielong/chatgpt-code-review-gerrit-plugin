@@ -49,12 +49,12 @@ as follows:
 
 ### Project Configuration
 
-To add the following content, please edit the project.config file in refs/meta/config:
+To add the following content, please edit the `project.config` file in `refs/meta/config`:
 
 ```
 [plugin "chatgpt-code-review-gerrit-plugin"]
     # Required parameters
-    gptToken = {gptToken}
+    gerritUserName = {gerritUserName}
     gerritAuthBaseUrl = {gerritAuthBaseUrl}
     ...
 
@@ -62,6 +62,17 @@ To add the following content, please edit the project.config file in refs/meta/c
     gptModel = {gptModel}
     gptPrompt = {gptPrompt}
     ...
+```
+
+#### Secure Configuration
+
+It is highly recommended to store sensitive information such as `gptToken` and `gerritPassword` in the `secure.config`
+file. Please edit the file at $gerrit_site/etc/`secure.config` and include the following details:
+
+```
+[plugin "chatgpt-code-review-gerrit-plugin"]
+    gptToken = {gptToken}
+    gerritPassword = {gerritPassword}
 ```
 
 ### Required Parameters

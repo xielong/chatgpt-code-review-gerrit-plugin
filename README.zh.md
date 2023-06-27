@@ -33,7 +33,7 @@
 ```
 [plugin "chatgpt-code-review-gerrit-plugin"]
     # 必填参数
-    gptToken = {gptToken}
+    gerritUserName = {gerritUserName}
     gerritAuthBaseUrl = {gerritAuthBaseUrl}
     ...
 
@@ -43,9 +43,20 @@
     ...
 ```
 
+#### 安全配置
+
+强烈建议将 `gptToken` 和 `gerritPassword` 这两项敏感信息配置在 `secure.config` 文件中。请在
+$gerrit_site/etc/`secure.config` 文件中进行编辑，并添加以下内容：
+
+```
+[plugin "chatgpt-code-review-gerrit-plugin"]
+    gptToken = {gptToken}
+    gerritPassword = {gerritPassword}
+```
+
 ### 项目配置
 
-编辑 refs/meta/config 的 project.config 文件，添加以下内容：
+编辑 `refs/meta/config` 的 `project.config` 文件，添加以下内容：
 
 ```
 [plugin "chatgpt-code-review-gerrit-plugin"]

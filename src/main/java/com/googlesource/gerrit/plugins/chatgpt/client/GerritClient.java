@@ -32,7 +32,6 @@ public class GerritClient {
                         + UriResourceLocator.gerritPatchSetUri(fullChangeId)))
                 .build();
 
-        //HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         HttpResponse<String> response = httpClientWithRetry.execute(request);
 
         if (response.statusCode() != HTTP_OK) {
@@ -64,7 +63,6 @@ public class GerritClient {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-        //HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         HttpResponse<String> response = httpClientWithRetry.execute(request);
 
         if (response.statusCode() != HTTP_OK) {
