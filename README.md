@@ -58,6 +58,9 @@ file. Please edit the file at $gerrit_site/etc/`secure.config` and include the f
     gerritPassword = {gerritPassword}
 ```
 
+If you wish to encrypt the information within the `secure.config` file, you can refer
+to: https://gerrit.googlesource.com/plugins/secure-config
+
 ### Project Configuration
 
 To add the following content, please edit the `project.config` file in `refs/meta/config`:
@@ -78,9 +81,7 @@ To add the following content, please edit the `project.config` file in `refs/met
 #### Secure Configuration
 
 Please ensure **strict control over the access permissions of `refs/meta/config`** since sensitive information such as
-`gptToken` and `gerritPassword` is configured in the `project.config` file within `refs/meta/config`. If you wish to
-encrypt
-the information within the `secure.config` file, you can refer to: https://gerrit.googlesource.com/plugins/secure-config
+`gptToken` and `gerritPassword` is configured in the `project.config` file within `refs/meta/config`.
 
 ### Required Parameters
 

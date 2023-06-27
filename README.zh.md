@@ -54,6 +54,8 @@ $gerrit_site/etc/`secure.config` 文件中进行编辑，并添加以下内容�
     gerritPassword = {gerritPassword}
 ```
 
+如果你希望加密 `secure.config` 文件中的信息，可以参考：https://gerrit.googlesource.com/plugins/secure-config
+
 ### 项目配置
 
 编辑 `refs/meta/config` 的 `project.config` 文件，添加以下内容：
@@ -74,8 +76,7 @@ $gerrit_site/etc/`secure.config` 文件中进行编辑，并添加以下内容�
 #### 安全配置
 
 **请确保对 `refs/meta/config` 的访问权限被严格控制**，因为敏感信息（例如 `gptToken` 和 `gerritPassword`
-）配置在 `project.config` 文件中。如果你希望加密 `secure.config`
-文件中的信息，可以参考：https://gerrit.googlesource.com/plugins/secure-config
+）配置在 `project.config` 文件中。
 
 ### 必填参数
 
