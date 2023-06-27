@@ -3,7 +3,7 @@ package com.googlesource.gerrit.plugins.chatgpt.client;
 import com.google.common.net.HttpHeaders;
 import com.google.gson.Gson;
 import com.google.inject.Singleton;
-import com.googlesource.gerrit.plugins.chatgpt.Configuration;
+import com.googlesource.gerrit.plugins.chatgpt.config.Configuration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.entity.ContentType;
 

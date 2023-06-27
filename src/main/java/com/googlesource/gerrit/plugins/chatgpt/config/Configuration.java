@@ -1,41 +1,49 @@
-package com.googlesource.gerrit.plugins.chatgpt;
+package com.googlesource.gerrit.plugins.chatgpt.config;
 
+import com.google.common.collect.Maps;
 import com.google.gerrit.server.config.PluginConfig;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
+
 @Slf4j
-@AllArgsConstructor
 public class Configuration {
 
     public static final String OPENAI_DOMAIN = "https://api.openai.com";
     public static final String DEFAULT_GPT_MODEL = "gpt-3.5-turbo";
     public static final String DEFAULT_GPT_PROMPT = "Act as a Code Review Helper, please review this patch set: ";
     public static final String NOT_CONFIGURED_ERROR_MSG = "%s is not configured";
+    public static final String KEY_GPT_PROMPT = "gptPrompt";
     private static final String DEFAULT_GPT_TEMPERATURE = "1";
     private static final boolean DEFAULT_GLOBAL_ENABLE = false;
     private static final String DEFAULT_ENABLED_PROJECTS = "";
     private static final boolean DEFAULT_PATCH_SET_REDUCTION = false;
     private static final boolean DEFAULT_PROJECT_ENABLE = false;
     private static final int DEFAULT_MAX_REVIEW_LINES = 1000;
-
     private static final String KEY_GPT_TOKEN = "gptToken";
     private static final String KEY_GERRIT_AUTH_BASE_URL = "gerritAuthBaseUrl";
     private static final String KEY_GERRIT_USERNAME = "gerritUserName";
     private static final String KEY_GERRIT_PASSWORD = "gerritPassword";
     private static final String KEY_GPT_DOMAIN = "gptDomain";
     private static final String KEY_GPT_MODEL = "gptModel";
-    private static final String KEY_GPT_PROMPT = "gptPrompt";
     private static final String KEY_GPT_TEMPERATURE = "gptTemperature";
     private static final String KEY_PROJECT_ENABLE = "isEnabled";
     private static final String KEY_GLOBAL_ENABLE = "globalEnable";
     private static final String KEY_ENABLED_PROJECTS = "enabledProjects";
     private static final String KEY_PATCH_SET_REDUCTION = "patchSetReduction";
     private static final String KEY_MAX_REVIEW_LINES = "maxReviewLines";
+    private final Map<String, Object> configsDynamically = Maps.newHashMap();
+    private final PluginConfig globalConfig;
+    private final PluginConfig projectConfig;
 
-    private PluginConfig globalConfig;
+    public Configuration(PluginConfig globalConfig, PluginConfig projectConfig) {
+        this.globalConfig = globalConfig;
+        this.projectConfig = projectConfig;
+    }
 
-    private PluginConfig projectConfig;
+    public <T> void configureDynamically(String key, T value) {
+        configsDynamically.put(key, value);
+    }
 
     public String getGptToken() {
         return getValidatedOrThrow(KEY_GPT_TOKEN);
@@ -62,6 +70,9 @@ public class Configuration {
     }
 
     public String getGptPrompt() {
+        if (configsDynamically.get(KEY_GPT_PROMPT) != null) {
+            return configsDynamically.get(KEY_GPT_PROMPT).toString();
+        }
         return getString(KEY_GPT_PROMPT, DEFAULT_GPT_PROMPT);
     }
 

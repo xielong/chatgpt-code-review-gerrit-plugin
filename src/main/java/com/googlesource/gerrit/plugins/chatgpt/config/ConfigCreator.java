@@ -1,4 +1,4 @@
-package com.googlesource.gerrit.plugins.chatgpt;
+package com.googlesource.gerrit.plugins.chatgpt.config;
 
 import com.google.gerrit.entities.Project;
 import com.google.gerrit.extensions.annotations.PluginName;
@@ -26,9 +26,10 @@ public class ConfigCreator {
     public Configuration createConfig(Project.NameKey projectName)
             throws NoSuchProjectException {
         PluginConfig globalConfig = configFactory.getFromGerritConfig(pluginName);
-        log.info("The names in global config: {}", globalConfig.getNames());
+        log.info("These configuration items have been set in the global configuration: {}", globalConfig.getNames());
         PluginConfig projectConfig = configFactory.getFromProjectConfig(projectName, pluginName);
-        log.info("The names in project config: {}", projectConfig.getNames());
+        log.info("These configuration items have been set in the project configuration: {}", projectConfig.getNames());
         return new Configuration(globalConfig, projectConfig);
     }
+
 }
