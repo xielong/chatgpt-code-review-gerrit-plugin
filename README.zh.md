@@ -71,6 +71,11 @@ $gerrit_site/etc/`secure.config` 文件中进行编辑，并添加以下内容�
     ...
 ```
 
+#### 安全配置
+
+**请确保对 `refs/meta/config` 的访问权限被严格控制**，因为敏感信息（例如 `gptToken` 和 `gerritPassword`
+）配置在 `project.config` 文件中。
+
 ### 必填参数
 
 - `gptToken`：OpenAI GPT token。

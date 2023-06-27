@@ -75,6 +75,11 @@ To add the following content, please edit the `project.config` file in `refs/met
     ...
 ```
 
+#### Secure Configuration
+
+Please ensure **strict control over the access permissions of `refs/meta/config`** since sensitive information such as
+`gptToken` and `gerritPassword` is configured in the project.config file within refs/meta/config.
+
 ### Required Parameters
 
 - `gptToken`: OpenAI GPT token.
