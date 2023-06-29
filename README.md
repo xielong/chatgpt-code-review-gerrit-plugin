@@ -2,12 +2,16 @@
 
 [中文版本](README.zh.md)
 
-This plugin allows you to use ChatGPT for code review in Gerrit conveniently. After submitting a patch, OpenAI will
-provide review feedback in the form of comments.
+## Features
+
+1. This plugin allows you to use ChatGPT for code review in Gerrit conveniently. After submitting a patchSet, OpenAI
+   will provide review feedback in the form of comments.
+2. You can continue to ask ChatGPT by @{gerritUserName} in the comments to further guide it in generating more
+   targeted review comments.
 
 ## Getting Started
 
-1. **Build:** Requires JDK11 or higher, Maven 3.0 or higher.
+1. **Build:** Requires JDK 11 or higher, Maven 3.0 or higher.
 
    ```bash
    mvn -U clean package
