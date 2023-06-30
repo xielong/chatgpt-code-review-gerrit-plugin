@@ -24,6 +24,19 @@ public class PatchSetReviewer {
         this.openAiClient = openAiClient;
     }
 
+    public static String reducePatchSet(String patchSet) {
+        Set<String> skipPrefixes = new HashSet<>(Arrays.asList(
+                "import", "-", "+package", "+import", "From", "Date:", "Subject:",
+                "Change-Id:", "diff --git", "index", "---", "+++", "@@", "Binary files differ"
+        ));
+
+        return Arrays.stream(patchSet.split("\n"))
+                .map(String::trim)
+                .filter(line -> skipPrefixes.stream().noneMatch(line::startsWith))
+                .filter(line -> !line.trim().isEmpty())
+                .collect(Collectors.joining("\n"));
+    }
+
     public void review(Configuration config, String fullChangeId) throws Exception {
         String patchSet = gerritClient.getPatchSet(config, fullChangeId);
         if (config.isPatchSetReduction()) {
@@ -56,19 +69,6 @@ public class PatchSetReviewer {
         }
         log.info("Review batches created: {}", batches.size());
         return batches;
-    }
-
-    private String reducePatchSet(String patchSet) {
-        Set<String> skipPrefixes = new HashSet<>(Arrays.asList(
-                "import", "-", "+package", "+import", "From", "Date:", "Subject:",
-                "Change-Id:", "diff --git", "index", "---", "+++", "@@", "Binary files differ"
-        ));
-
-        return Arrays.stream(patchSet.split("\n"))
-                .map(String::trim)
-                .filter(line -> skipPrefixes.stream().noneMatch(line::startsWith))
-                .filter(line -> !line.trim().isEmpty())
-                .collect(Collectors.joining("\n"));
     }
 
     private String getReviewSuggestion(Configuration config, String changeId, String patchSet) throws Exception {

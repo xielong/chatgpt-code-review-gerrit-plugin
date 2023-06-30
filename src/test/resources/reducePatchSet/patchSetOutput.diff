@@ -1,0 +1,9 @@
+package com.example;
+public class HelloWorld {
++    private final LinkedList<String> messages = new LinkedList<>();
+public static void main(String[] args) {
+HelloWorld helloWorld = new HelloWorld();
+System.out.println(messages);
+}
++    // This file was modified for the new version
+}

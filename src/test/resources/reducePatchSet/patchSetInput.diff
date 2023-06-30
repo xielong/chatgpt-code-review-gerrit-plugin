@@ -1,0 +1,22 @@
+--- OldVersion.java 2023-06-30 12:00:00.000000000 +0800
++++ NewVersion.java 2023-06-30 12:10:00.000000000 +0800
+@@ -1,9 +1,9 @@
+ package com.example;
+
+-import java.util.List;
+ import java.util.ArrayList;
++import java.util.LinkedList;
+
+ public class HelloWorld {
+-    private final List<String> messages = new ArrayList<>();
++    private final LinkedList<String> messages = new LinkedList<>();
+
+     public static void main(String[] args) {
+         HelloWorld helloWorld = new HelloWorld();
+@@ -12,6 +12,6 @@
+         System.out.println(messages);
+     }
+
+-    // This is the end of the file
++    // This file was modified for the new version
+ }

@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 
 @Slf4j
 @RunWith(MockitoJUnitRunner.class)
-public class ChatGptReviewTests {
+public class ChatGptReviewTest {
     private static final Project.NameKey PROJECT_NAME = Project.NameKey.parse("myProject");
     private static final Change.Key CHANGE_ID = Change.Key.parse("myChangeId");
     private static final BranchNameKey BRANCH_NAME = BranchNameKey.create(PROJECT_NAME, "myBranchName");
