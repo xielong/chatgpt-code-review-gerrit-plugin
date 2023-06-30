@@ -35,8 +35,14 @@ public class HttpClientWithRetry {
 
         this.retryer = RetryerBuilder.<HttpResponse<String>>newBuilder()
                 .retryIfException()
-                .retryIfResult(response -> response.statusCode() != HTTP_OK)
-                .withWaitStrategy(WaitStrategies.fixedWait(20, TimeUnit.SECONDS))
+                .retryIfResult(response -> {
+                    if (response.statusCode() != HTTP_OK) {
+                        log.error("Retry because HTTP status code is not 200. The status code is: " + response.statusCode());
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }).withWaitStrategy(WaitStrategies.fixedWait(20, TimeUnit.SECONDS))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(5))
                 .withRetryListener(listener)
                 .build();

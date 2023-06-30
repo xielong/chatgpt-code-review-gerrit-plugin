@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Singleton
 public class PatchSetReviewer {
     private static final String SPLIT_REVIEW_MSG = "Too many changes. Please consider splitting into patches smaller than %s lines for review.";
-    private static final int COMMENT_BATCH_SIZE = 25;
+    private static final int COMMENT_BATCH_SIZE = 200;
     private final GerritClient gerritClient;
     private final OpenAiClient openAiClient;
 
@@ -65,7 +65,7 @@ public class PatchSetReviewer {
         ));
 
         return Arrays.stream(patchSet.split("\n"))
-                .map(line -> line.replace("\t", "").replace("    ", ""))
+                .map(String::trim)
                 .filter(line -> skipPrefixes.stream().noneMatch(line::startsWith))
                 .filter(line -> !line.trim().isEmpty())
                 .collect(Collectors.joining("\n"));
