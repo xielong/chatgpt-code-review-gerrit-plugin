@@ -17,6 +17,12 @@
    mvn -U clean package
     ```
 
+   Alternatively, you can also download the pre-built packages directly from the 'Releases' page on our GitHub
+   repository.
+   On this page, you will find the released versions and can download the corresponding JAR files. Make sure to select
+   the
+   appropriate JAR file that corresponds to the desired version.
+
 2. **Install:** Upload the compiled jar file to the $gerrit_site/plugins directory, then refer to [configuration
    parameters](#configuration-parameters) for settings, and restart Gerrit.
 
