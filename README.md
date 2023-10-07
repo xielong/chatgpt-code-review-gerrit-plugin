@@ -23,16 +23,113 @@
    the
    appropriate JAR file that corresponds to the desired version.
 
-2. **Install:** Upload the compiled jar file to the $gerrit_site/plugins directory, then refer to [configuration
-   parameters](#configuration-parameters) for settings, and restart Gerrit.
+2. **Install:** Upload the compiled jar file to the `$gerrit_site/plugins` directory.
 
-3. **Verify:** After installing the plugin, you can see the following information in Gerrit's logs:
+3. **Configure:** Set up the basic parameters in your `$gerrit_site/etc/gerrit.config`:
+- `gptToken`: OpenAI GPT token.
+- `gerritAuthBaseUrl`: The URL of your Gerrit instance. Similar to: https://gerrit.local.team/a
+- `gerritUserName`: Gerrit username.
+- `gerritPassword`: Gerrit password.
+- `globalEnable`: Default value is false. The plugin will only review specified repositories. If set to true, the plugin
+  will by default review all pull requests.
+
+  For enhanced security, consider storing sensitive information like gptToken and gerritPassword in a secure location or file. Detailed instructions on how to do this will be provided later in this document.
+
+4. **Verify:** After restarting Gerrit, you can see the following information in Gerrit's logs:
 
    ```bash
    INFO com.google.gerrit.server.plugins.PluginLoader : Loaded plugin chatgpt-code-review-gerrit-plugin, version 1.0.0
    ```
 
    You can also check the status of the chatgpt-code-review-gerrit-plugin on Gerrit's plugin page as Enabled.
+
+## Code Review Example
+
+Consider the following code snippet:
+
+```java
+public static int stringToInt(String bar) throws Exception {
+    if (bar == null || bar.length() == 0) {
+        throw new Exception("Invalid string input");
+    }
+
+    int x = 0;
+    boolean y = false;
+    int z = 0;
+
+    if (bar.charAt(bar.length() - 1) == '-') {
+        y = true;
+    }
+
+    for (int i = z; i < bar.length(); i++) {
+        char w = bar.charAt(i);
+
+        if (w == ' ') {
+            continue;
+        }
+
+        x = x * 10 + (w - '0');
+    }
+
+    return -x;
+}
+```
+
+Upon review, here are some suggestions and potential issues for the given patch:
+
+- **Inconsistent handling of negative numbers:** According to the code, the function only reverts the sign of the output if the last char of the string is a "-". This is not a conventional way to define negative numbers in strings. Normally, the "-" sign should be at the start of the string.
+- **Error handling of non-number characters:** The function lacks handling of non-numeric characters comprehensively. It takes anything that isn't a space and calculates its ASCII value, which could yield undesired results if any unwanted character apart from numbers and spaces are introduced.
+- **Naming variables:** It could be good practice to use more descriptive variable names instead of x, y, z, and w.
+- **Handling of trailing spaces:** The function is currently continuing to the next iteration whenever it encounters a space. This would mean it won't handle trailing spaces well, because it won't realize it's reached the end of the valid part of the string.
+- **Unused Variable:** Variable 'y' is defined but never used.
+- **Always returns negative value:** This could be a logical error. Based on typical use cases, the conversion of a string to an integer would not always yield a negative result.
+
+Overall, it's recommended that the exception handling for the string to int conversion could be improved and the code for negative numbers should be fixed.
+
+### Optimize the code
+
+```
+@gpt Please review and optimize this code. I'd like to continue manually parsing the string
+```
+
+The existing code converts a string representing a number into its integer form. Nevertheless, it does not take into account certain circumstances such as input strings that contain characters aside from numbers, whitespaces, or a '-' at the last place. A '-' at the last place is not standard for indicating negative numbers; it should be at the first place. Furthermore, in its current state, the code always returns a negative number. Here is a revision of the code that optimizes logic and improves error handling.
+
+
+```java
+public static int stringToInt(String inputString) throws IllegalArgumentException {
+    if (inputString == null || inputString.trim().isEmpty()) {
+        throw new IllegalArgumentException("Invalid string input");
+    }
+
+    inputString = inputString.trim();
+    boolean isNegative = false;
+    String numStr = inputString;
+
+    if (inputString.charAt(0)=='-') {
+        isNegative = true;
+        numStr = inputString.substring(1);
+    }
+
+    int result = 0;
+
+    for (int i = 0; i < numStr.length(); i++) {
+        char c = numStr.charAt(i);
+
+        if (!Character.isDigit(c)) {
+            throw new IllegalArgumentException("Invalid string input: non-digit character encountered.");
+        }
+
+        result *= 10;
+        result += c - '0';
+    }
+
+    return isNegative ? -result : result;
+}
+
+```
+
+The above optimization validates that the string only contains valid characters. It throws an IllegalArgumentException in cases where the String is null, a string without characters, or a string containing non-digit characters. The exception in the event that it starts with '-' (unlike the original code, where it only checks if it ends with '-'), the 'inputString' is trimmed prior to processing to eliminate leading and trailing whitespaces.
+
 
 ## Configuration Parameters
 
@@ -92,15 +189,6 @@ To add the following content, please edit the `project.config` file in `refs/met
 
 Please ensure **strict control over the access permissions of `refs/meta/config`** since sensitive information such as
 `gptToken` and `gerritPassword` is configured in the `project.config` file within `refs/meta/config`.
-
-### Required Parameters
-
-- `gptToken`: OpenAI GPT token.
-- `gerritAuthBaseUrl`: The URL of your Gerrit instance. Similar to: https://gerrit.local.team/a
-- `gerritUserName`: Gerrit username.
-- `gerritPassword`: Gerrit password.
-- `globalEnable`: Default value is false. The plugin will only review specified repositories. If set to true, the plugin
-  will by default review all pull requests.
 
 ### Optional Parameters
 
