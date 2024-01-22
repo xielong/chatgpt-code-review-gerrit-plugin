@@ -19,6 +19,8 @@ public class HttpClientWithRetry {
     private final Retryer<HttpResponse<String>> retryer;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
+            // Don't use default HttpClient.Version.HTTP_2 for some old inference servers
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofMinutes(5))
             .build();
 
