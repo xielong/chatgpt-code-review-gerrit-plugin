@@ -35,7 +35,10 @@ public class EventListenerHandler {
     }
 
     public static String buildFullChangeId(Project.NameKey projectName, BranchNameKey branchName, Change.Key changeKey) {
-        return String.join("~", projectName.get(), branchName.shortName(), changeKey.get());
+        // project name need escape '/'. Otherwise, the full change id will be invalid.
+        // for example: test%2Fproject%2name~test-branch~I7a1f81560359a6688ae3acabe5e753158ddf832a
+        String projectNameEscaped = projectName.get().replace("/", "%2F");
+        return String.join("~", projectNameEscaped, branchName.shortName(), changeKey.get());
     }
 
     private void addShutdownHoot() {
